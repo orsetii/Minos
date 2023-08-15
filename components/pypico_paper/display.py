@@ -367,6 +367,9 @@ class EPD_2in13_V3_Portrait(framebuf.FrameBuffer):
         self.send_data(0x01)
         self.delay_ms(100)
  
+ 
+isError = False 
+ 
 def clear_connected_devices_screen_portion(epd):
     epd.fill_rect(5, 205, 110, 8, 0xFF)
     
@@ -386,14 +389,20 @@ def clear_clock_date(epd):
     epd.fill_rect(2, 32, 113, 9, 0xFF)
 
 def update_clock(epd):
-    date = minos_network.get_date()
-    epd.text("  " + date.decode("utf-8"), 2, 32, 0x00)
-    now = minos_network.get_time_no_seconds().decode("utf-8")
-    if "00" in now:
-        clear_clock_date(epd);
-    clear_clock_time(epd);
-    epd.text("     " + now, 2, 48, 0x00)
-    
+    try:
+        date = minos_network.get_date()
+        epd.text("  " + date.decode("utf-8"), 2, 32, 0x00)
+        now = minos_network.get_time_no_seconds().decode("utf-8")
+        if "00" in now:
+            clear_clock_date(epd);
+        clear_clock_time(epd);
+        epd.text("     " + now, 2, 48, 0x00)
+    except:
+        clear_clock_time(epd)
+        isError = True
+        epd.text(" Network Issue", 2, 48, 0x00)
+        
+        
     
     
 def update_hive_status_display(epd, healthy, connectedDevices):
@@ -406,18 +415,19 @@ def update_hive_status_display(epd, healthy, connectedDevices):
 
         if jsonHealthy != healthy:
             healthy = jsonHealthy
-            if healthy is True:  
+            if healthy is True:
                 epd.text("No Issues", 5, 218, 0x00)
             else:
                 epd.text("⚠ Issue(s) Reported ⚠", 5, 218, 0x00)
-                
+        else:
+            epd.text("No Issues", 5, 218, 0x00)
+         
         if connectedDevices != str(len(hiveJson["devices"])):
             connectedDevices = str(len(hiveJson["devices"]))
             clear_connected_devices_screen_portion(epd);
             epd.text("Connected: " + connectedDevices, 5, 205, 0x00)
     except:
-        clear_entire_connected_devices_screen_portion(epd)
-        
+        clear_entire_connected_devices_screen_portion(epd)        
         epd.text("Network Issue", 5, 218, 0x00)
         
     
@@ -433,7 +443,7 @@ def clear_temp_display_text(epd):
     
 def update_temperature_display(epd, internal, external):
     try:
-        
+        temperature_text(epd)
         temp_res = minos_network.get_internal_temp();
         tempJson = ujson.loads(temp_res)    
         temp_value = float(tempJson["temp"])
@@ -454,14 +464,17 @@ def update_temperature_display(epd, internal, external):
         clear_temp_display_screen_portion_int(epd)
         clear_temp_display_screen_portion_ext(epd)
         clear_temp_display_text(epd)
-        
+        isError = True
         epd.text("Network Issue", 8, 165, 0x00)
         
         
          
         
     
-
+def temperature_text(epd):
+    epd.text("Temperatures(C)", 2, 140, 0x00)
+    epd.text("Int", 12, 153, 0x00)
+    epd.text("Ext", 81, 153, 0x00)
 
 
 def main(name):
@@ -481,11 +494,8 @@ def main(name):
     epd.text("No Issues", 5, 218, 0x00)
     
     
-    epd.text("Temperatures(C)", 2, 140, 0x00)
-    epd.text("Int", 12, 153, 0x00)
-    epd.text("Ext", 81, 153, 0x00)
+    temperature_text(epd)
     epd.rect(0, 148, 117, 40, 0x00)
-    epd.text("No Issues", 5, 218, 0x00)
     
     epd.text("Clock", 2, 16, 0x00)
     epd.rect(0, 24, 117, 40, 0x00)
@@ -496,8 +506,8 @@ def main(name):
     
     
     while True:
-            epd.delay_ms(10000)
-            update_display(epd, healthy, connectedDevices, currentInternal, currentExternal)                    
-            epd.display_Partial(epd.buffer)
+        epd.delay_ms(10000)
+        update_display(epd, healthy, connectedDevices, currentInternal, currentExternal)                    
+        epd.display_Partial(epd.buffer)
 
 
