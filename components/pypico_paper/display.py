@@ -390,11 +390,13 @@ def clear_clock_date(epd):
 
 def update_clock(epd):
     try:
-        date = minos_network.get_date()
-        epd.text("  " + date.decode("utf-8"), 2, 32, 0x00)
+        date = minos_network.get_date().decode("utf-8")
         now = minos_network.get_time_no_seconds().decode("utf-8")
-        if "00" in now:
+
+        if ":00" in now:
             clear_clock_date(epd);
+     
+        epd.text("  " + date, 2, 32, 0x00)
         clear_clock_time(epd);
         epd.text("     " + now, 2, 48, 0x00)
     except:
@@ -432,10 +434,10 @@ def update_hive_status_display(epd, healthy, connectedDevices):
         
     
 def clear_temp_display_screen_portion_int(epd):
-    epd.fill_rect(8, 165, 60, 9, 0xFF)
+    epd.fill_rect(8, 162, 60, 9, 0xFF)
     
 def clear_temp_display_screen_portion_ext(epd):
-    epd.fill_rect(73, 165, 42, 9, 0xFF)
+    epd.fill_rect(73, 162, 42, 9, 0xFF)
     
 def clear_temp_display_text(epd):
     epd.fill_rect(12, 153, 103, 8, 0xFF)
@@ -446,35 +448,43 @@ def update_temperature_display(epd, internal, external):
         temperature_text(epd)
         temp_res = minos_network.get_internal_temp();
         tempJson = ujson.loads(temp_res)    
-        temp_value = float(tempJson["temp"])
+        temp_value = float(tempJson["temperature"])
+        humid_value = float(tempJson["humidity"])
         if internal != temp_value:
             clear_temp_display_screen_portion_int(epd)
-            epd.text("{:05.2f}".format(temp_value), 8, 165, 0x00)
+            epd.text("{:05.2f}".format(temp_value), 8, 120, 0x00)
+            epd.text("{:05.2f}".format(humid_value), 8, 164, 0x00)
             
             
         temp_res = minos_network.get_external_temp();
         tempJson = ujson.loads(temp_res)
         
-        temp_value = float(tempJson["temp"])
+        temp_value = float(tempJson["temperature"])
+        humid_value = float(tempJson["humidity"])
         if external != temp_value:
             clear_temp_display_screen_portion_ext(epd)
-            epd.text("{:05.2f}".format(temp_value), 73, 165, 0x00)
+            epd.text("{:05.2f}".format(temp_value), 73, 120, 0x00)
+            epd.text("{:05.2f}".format(humid_value), 73, 164, 0x00)
             
-    except:
+    except Exception as error:
+        print("An exception occurred:", error)
         clear_temp_display_screen_portion_int(epd)
         clear_temp_display_screen_portion_ext(epd)
         clear_temp_display_text(epd)
-        isError = True
-        epd.text("Network Issue", 8, 165, 0x00)
+        epd.text("Network Issue", 8, 150, 0x00)
         
         
          
         
     
 def temperature_text(epd):
-    epd.text("Temperatures(C)", 2, 140, 0x00)
-    epd.text("Int", 12, 153, 0x00)
-    epd.text("Ext", 81, 153, 0x00)
+    epd.text("Temp & Humidity", 2, 78, 0x00)    
+    epd.text("Temperature", 16, 94, 0x00)
+    epd.text("Int.", 12, 108, 0x00)
+    epd.text("Ext.", 78, 108, 0x00)
+    epd.text("Humidity", 24, 138, 0x00)
+    epd.text("Int.", 12, 152, 0x00)
+    epd.text("Ext.", 78, 152, 0x00)
 
 
 def main(name):
@@ -495,7 +505,7 @@ def main(name):
     
     
     temperature_text(epd)
-    epd.rect(0, 148, 117, 40, 0x00)
+    epd.rect(0, 88, 117, 95, 0x00)
     
     epd.text("Clock", 2, 16, 0x00)
     epd.rect(0, 24, 117, 40, 0x00)
