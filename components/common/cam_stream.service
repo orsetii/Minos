@@ -1,0 +1,12 @@
+[Unit]
+Description=Cam Stream Service
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=/usr/bin/env python /opt/cam_stream.py
+
+[Install]
+WantedBy=multi-user.target
